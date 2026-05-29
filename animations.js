@@ -3935,10 +3935,13 @@ const LUPETTI_DATA = {
 
       const cogForms = expandForms(cog);
       const nomForms = expandForms(nom);
-      // Aggiungo anche il SOLO primo nome (FRANCESCA da "FRANCESCA PIA")
-      const firstN = nom.split(/\s+/)[0];
-      if (firstN && firstN !== nom) expandForms(firstN).forEach(f => nomForms.push(f));
-
+      // Aggiungo anche i SINGOLI nomi (es. "FRANCESCA" da "FRANCESCA PIA")
+      const nomWords = nom.split(/\s+/).filter(Boolean);
+      if (nomWords.length > 1) nomWords.forEach(w => expandForms(w).forEach(f => nomForms.push(f)));
+      // Aggiungo anche i SINGOLI cognomi (es. "CAPARROTTA" da "MERANTE CAPARROTTA")
+      const cogWords = cog.split(/\s+/).filter(Boolean);
+      if (cogWords.length > 1) cogWords.forEach(w => expandForms(w).forEach(f => cogForms.push(f)));
+      
       const baseSet = new Set();
       const addBase = v => v && v.trim() && baseSet.add(v.trim());
 
