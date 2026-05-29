@@ -880,6 +880,39 @@ const LUPETTI_DATA = {
       }
     };
 
+    // === Mappa foto: codice socio → nome file dentro la cartella foto/ ===
+    // Modifica il valore a destra con il nome esatto del file che hai messo su GitHub.
+    // Esempio: "1697742": "FrancescaPia.jpg"
+    const FOTO_MAP = {
+      "1697742": "Francesca_Pia_Amato.jpeg",       // Amato Francesca Pia
+      "1724452": "Lilla.jpeg",      // Baglione Lilla Carolina
+      "1664576": "Paolo.jpeg",              // Barbanti Paolo
+      "1724730": "Peppino.jpeg",            // Buffone Peppino
+      "1724501": "Anna_Merante_Caparrotta.jpeg",        // Caparrotta Anna Merante
+      "1724869": "Maria.jpeg",              // Caputi Maria
+      "1698696": "Emanuele.jpeg",           // Curto Emanuele
+      "1673733": "Marta.jpeg",              // D'Alessi Marta
+      "1672845": "Marco.jpeg",              // D'Elia Marco
+      "1724331": "Cecilia.jpeg",       // Davoli Cecilia Maria
+      "1675141": "Mattia.jpeg",             // De Santis Mattia
+      "1664435": "Anna_Dona.jpeg",           // Donà Anna
+      "1724213": "Andrea.jpeg",             // Froio Andrea
+      "1725535": "Alessandro.jpeg",         // Gallo Alessandro
+      "1663918": "Francesca_Gallo.jpeg",     // Gallo Francesca
+      "1672147": "Angela.jpeg",          // Isabella Angela Pia
+      "1724392": "Mario.jpeg",              // Isgrò Mario
+      "1698718": "Beatrice.jpeg",           // Longo Beatrice
+      "1726100": "Riccardo.jpeg",           // Lucchino Riccardo
+      "1679559": "Vito.jpeg",          // Malvaso Vito Maria
+      "1664383": "Francesca_Sole.jpeg",      // Pellegrino Francesca Sole
+      "1730815": "Chiara.jpeg",             // Raso Chiara
+      "1664451": "Mario_Luca.jpeg",          // Stella Mario Luca
+      "1674287": "Delia.jpeg",              // Talarico Delia
+      "1730561": "Vanessa.jpeg",            // Torcasio Vanessa
+      "1696545": "Saverio.jpeg",            // Tropea Saverio
+      "1679611": "Giulia.jpeg",             // Viola Giulia
+    };
+
     const DATA = {
       "unita": [
         {
@@ -3959,11 +3992,15 @@ const LUPETTI_DATA = {
       const candidates = [];
       baseSet.forEach(b => exts.forEach(e => candidates.push(`foto/${b}${e}`)));
 
-      const fotoImg = candidates.length ? `
-        <img src="${candidates[0]}"
-             data-next='${JSON.stringify(candidates.slice(1)).replace(/'/g, '&#39;')}'
+      // Foto: lookup veloce nella FOTO_MAP, default {CodiceSocio}.jpg
+      const cs = (s.CodiceSocio || '').toString().replace(/['"<>]/g, '');
+      const cogNom = ((s.Cognome || '') + ' ' + (s.Nome || '')).trim();
+      const customFile = FOTO_MAP[cs];
+      const fotoSrc = customFile ? `foto/${customFile}` : (cs ? `foto/${cs}.jpg` : '');
+      const fotoImg = fotoSrc ? `
+        <img src="${fotoSrc}"
              alt="${cogNom.replace(/"/g, '&quot;')}"
-             onerror="fotoFallback(this)"
+             onerror="this.onerror=null;this.style.display='none';"
              style="width:140px;height:140px;border-radius:30%;border:4px solid var(--purple);object-fit:cover;box-shadow:0 4px 12px rgba(92,49,134,0.18);background:#fff;flex-shrink:0">
       ` : '';
 
@@ -4044,21 +4081,6 @@ const LUPETTI_DATA = {
         </div>
       </div>
     </div>`;
-    }
-
-    // Prova in successione i diversi nomi possibili della foto.
-    // Quando finiscono i tentativi, nasconde l'immagine.
-    function fotoFallback(img) {
-    let next = [];
-    try { next = JSON.parse(img.dataset.next || '[]'); } catch (e) { }
-    if (!next.length) {
-        img.onerror = null;
-        img.style.display = 'none';
-        return;
-    }
-    const url = next.shift();
-    img.dataset.next = JSON.stringify(next);
-    img.src = url;
     }
 
     function escapeHtml(s) {
