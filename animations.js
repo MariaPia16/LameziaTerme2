@@ -3892,24 +3892,67 @@ const LUPETTI_DATA = {
         isCurrentYear: true
       });
 
-      // Foto statica + descrizione affiancate
-      // Tenta in ordine: CodiceSocio.jpg → Cognome_Nome.jpg → Cognome Nome.jpg → Nome_Cognome.jpg ecc.
       const cleanForFile = (t) => String(t || '').replace(/['"<>]/g, '').trim();
       const cs = cleanForFile(s.CodiceSocio);
       const cog = cleanForFile(s.Cognome);
       const nom = cleanForFile(s.Nome);
       const cogNom = (cog + ' ' + nom).trim();
 
-      const baseNames = [];
-      if (nom) baseNames.push(nom.charAt(0).toUpperCase() + nom.slice(1).toLowerCase());
-      if (cog && nom) baseNames.push(
-        `${nom.charAt(0).toUpperCase() + nom.slice(1).toLowerCase()}_${cog.charAt(0).toUpperCase() + cog.slice(1).toLowerCase()}`
-      );
+      // Trasforma "X'" finale in vocale accentata: DONA'→DONÀ, Cefala'→Cefalà, ecc.
+      const accentLast = (x) => x.replace(/([aeiouAEIOU])'$/, (_, v) => {
+        const m = {a:'à',e:'è',i:'ì',o:'ò',u:'ù',A:'À',E:'È',I:'Ì',O:'Ò',U:'Ù'};
+        return m[v] || v;
+      });
+      // Title Case: "FRANCESCA PIA" → "Francesca Pia"
+      const titleCase = (x) => x.toLowerCase().split(/\s+/)
+        .map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : '').join(' ');
 
-      // Per ogni base provo .jpg, .jpeg, .png (con minuscola e maiuscola estensione)
-      const exts = ['.jpg', '.jpeg', '.png', '.JPG', '.JPEG', '.PNG'];
+      // Genera tutte le varianti utili di una stringa
+      function expandForms(x) {
+        if (!x) return [];
+        const set = new Set();
+        const add = v => v && set.add(v);
+        // Case base: MAIUSCOLO, minuscolo, Titolo
+        add(x); add(x.toLowerCase()); add(titleCase(x));
+        // Senza apostrofo
+        if (x.includes("'")) {
+          const na = x.replace(/'/g, '');
+          add(na); add(na.toLowerCase()); add(titleCase(na));
+        }
+        // Con accento finale
+        const ac = accentLast(x);
+        if (ac !== x) {
+          add(ac); add(ac.toLowerCase()); add(titleCase(ac));
+        }
+        // Aggiungo versione concatenata (senza spazi) di ognuna
+        const out = new Set();
+        set.forEach(v => {
+          out.add(v);
+          if (v.includes(' ')) out.add(v.replace(/\s+/g, ''));
+        });
+        return [...out];
+      }
+
+      const cogForms = expandForms(cog);
+      const nomForms = expandForms(nom);
+      // Aggiungo anche il SOLO primo nome (FRANCESCA da "FRANCESCA PIA")
+      const firstN = nom.split(/\s+/)[0];
+      if (firstN && firstN !== nom) expandForms(firstN).forEach(f => nomForms.push(f));
+
+      const baseSet = new Set();
+      const addBase = v => v && v.trim() && baseSet.add(v.trim());
+
+      if (cs) addBase(cs);
+      cogForms.forEach(addBase);
+      nomForms.forEach(addBase);
+      cogForms.forEach(c => nomForms.forEach(n => {
+        addBase(`${c}_${n}`); addBase(`${c} ${n}`); addBase(`${c}${n}`);
+        addBase(`${n}_${c}`); addBase(`${n} ${c}`); addBase(`${n}${c}`);
+      }));
+
+      const exts = ['.jpg', '.jpeg', '.png', '.JPG', '.JPEG', '.JPE', '.PNG'];
       const candidates = [];
-      baseNames.forEach(b => exts.forEach(e => candidates.push(`foto/${b}${e}`)));
+      baseSet.forEach(b => exts.forEach(e => candidates.push(`foto/${b}${e}`)));
 
       const fotoImg = candidates.length ? `
         <img src="${candidates[0]}"
